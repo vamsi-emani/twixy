@@ -24,86 +24,89 @@ import org.scribe.oauth.OAuthService;
 /**
  * @author Vamsi Emani
  */
-public class TwixyConsole extends AbstractTwixy implements Twixy{	 	
+public class TwixyConsole extends AbstractTwixyConsole{	 	
 	
-	private OAuthService service;
-	private Token accessToken;
+	private void login(){
+		setService(new ServiceBuilder().provider(TwitterApi.class)				
+				.apiKey("6icbcAXyZx67r8uTAUM5Qw")
+				.apiSecret("SCCAdUUc6LXxiazxH3N0QfpNUvlUy84mZ2XZKiv39s")
+				.build()
+		);
+	    log("=== Twitter's OAuth Workflow ===");	
+	    setAccessToken(reloadAccessToken());
+		if(!hasAccessToken()){			
+			Token requestToken = getRequestToken(getService());
+			Verifier verifier = verifyUrl(requestToken, getService());
+			setAccessToken(getAccessToken(requestToken, verifier, getService()));
+			saveAccessToken(getAccessToken());
+		}
+	}
+	
+	private void setUp(){
+		this.setFriends(loadFriends());
+		this.initConsoleCommands();
+		this.printHelpInfo();
+	}
 	
 	private void startApp(){
-		service = new ServiceBuilder()
-        .provider(TwitterApi.class)
-        .apiKey("TROnC8SdELv8RggkYyn86w")
-        .apiSecret("YDsRrPeYVCw42jPtBLurwtOKnPgk51Z7gg4Eatsw")
-        .build();
-	    log("=== Twitter's OAuth Workflow ===");	
-	    accessToken = reloadAccessToken();
-		if(accessToken == null){			
-			Token requestToken = getRequestToken(service);
-			Verifier verifier = verifyUrl(requestToken, service);
-			accessToken = getAccessToken(requestToken, verifier, service);
-			saveAccessToken(accessToken);
-		}	    
-	    getTimeline(20);	    
-	    talk();	 
+		this.login();		
+		this.setUp();		
+	    this.getTimeline(20);	    
+	    this.talk();	 
 	}
 	
 	public static void main(String[] args) {
 		new TwixyConsole().startApp();
 	}		
-	
-	public List<String> getTimeline(int count){
-		List timeline = new ArrayList(count);
-	    OAuthRequest request = new OAuthRequest(Verb.GET, TwitterUrl.TIMELINE+"?count="+count);
-	    service.signRequest(accessToken, request);
-	    Response response = request.send();
-	    String jsonResponse = response.getBody();	   
-	    JSONArray array = new JSONArray(jsonResponse);
-	    log("----------------");
-	    log("HOME");
-	    log("----------------");
-	    for(int i = 0 ; i<array.length(); i++){	   
-	    	JSONObject json = (JSONObject) array.get(i);
-	    	String user = ((JSONObject) json.get("user")).get("screen_name").toString();
-	    	String tweet = user + " | " + json.get("text");
-	    	log(tweet);
-	    	timeline.add(tweet);
-	    }	    
-	    return timeline;
+		
+	public void initConsoleCommands(){
+		addCommand("-n", new ICommand() {			
+			public Object exec(AbstractTwixyConsole console) {						
+				return console.getTimeline(Integer.parseInt(console.getUserInput()));
+			}
+		}).addCommand("-t", new ICommand() {			
+			public Object exec(AbstractTwixyConsole console) {				
+				console.tweet(console.getUserInput());
+				return "Twitter status updated ...";
+			}
+		}).addCommand("-f", new ICommand() {		
+			public Object exec(AbstractTwixyConsole console) {
+				return console.listFriends(console.getUserInput());				
+			}
+		}).addCommand("help", new ICommand() {			
+			public Object exec(AbstractTwixyConsole console) {
+				console.printHelpInfo();
+				return "";
+			}
+		}) ;
 	}
 	
-	public void tweet(String status){
-		if(status.length() < 140){			
-		    OAuthRequest request = new OAuthRequest(Verb.POST, TwitterUrl.STATUS_UPDATE);
-		    request.addBodyParameter("status", status);
-		    service.signRequest(accessToken, request);
-		    Response response = request.send();		    
-		}else
-			log("char limit exceeded 140");
-	}
-	
-	private void talk(){
-		String userInput = "";
-		while(!userInput.endsWith("!")){
-			userInput = getLineInput();
-			if(userInput.equalsIgnoreCase("help"))
+	private void talk(){		
+		while(!getUserInput().endsWith("!")){
+			setUserInput(getLineInput());			
+			if(getUserInput().equalsIgnoreCase("help"))
 				printHelpInfo();			
-			else if(userInput.length() != 0){
-				char actionType = userInput.charAt(0);			
-				switch (actionType) {								
-				case '-':					
-					getTimeline(Integer.parseInt(userInput.substring(1)));
-				default:
-					if(!userInput.toLowerCase().startsWith("help") || userInput.endsWith("!"))
-						tweet(userInput);						
-				}
+			else if(getUserInput().length() != 0){
+				String actionType = getUserInput();
+				log(executeCmd(actionType));				
 			}
 			
 		}
 	}
 		
-	public void printHelpInfo(){
-		log("ENTER TEXT & HIT ENTER TO UPDATE STATUS.");
-		log("TO GET LAST N TWEETS, ENTER - FOLLOWED BY NUMBER.\n\tUsage : -10");
-		log("TO QUIT ENTER !");
+	public List<Friend> loadFriends() {		
+		List<Friend> friends = new ArrayList();
+	    OAuthRequest request = new OAuthRequest(Verb.GET, TwitterUrl.FRIENDS);
+	    getService().signRequest(getAccessToken(), request);
+	    Response response = request.send();
+	    String jsonResponse = response.getBody();	   
+	    JSONArray array = (JSONArray) new JSONObject(jsonResponse).get("users");	    
+	    for(int i = 0 ; i<array.length(); i++){	   
+	    	JSONObject json = (JSONObject) array.get(i);	    		    
+	    	friends.add(new Friend(json.get("screen_name").toString()));
+	    }	   
+	    return friends;
 	}
+
+	
 }

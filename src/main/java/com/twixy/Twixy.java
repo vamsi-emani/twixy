@@ -10,4 +10,6 @@ public interface Twixy {
 	public List<String> getTimeline(int count);
 	
 	public void tweet(String status);
+	
+	public List<Friend> getFriends();
 }
