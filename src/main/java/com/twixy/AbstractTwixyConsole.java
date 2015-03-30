@@ -34,7 +34,7 @@ public class AbstractTwixyConsole extends AbstractTwixy implements Twixy{
 	}
 	
 	public String getUserInput() {
-		return userInput.length() > 2 ? userInput.substring(2) : userInput; 
+		return userInput.trim(); 
 	}
 
 	public void setUserInput(String userInput) {
@@ -67,14 +67,9 @@ public class AbstractTwixyConsole extends AbstractTwixy implements Twixy{
 	
 	public List<String> getTimeline(int count){
 		List timeline = new ArrayList(count);
-	    OAuthRequest request = new OAuthRequest(Verb.GET, TwitterUrl.TIMELINE+"?count="+count);
-	    service.signRequest(accessToken, request);
-	    Response response = request.send();
-	    String jsonResponse = response.getBody();	   
-	    JSONArray array = new JSONArray(jsonResponse);
-	    log("----------------");
-	    log("HOME");
-	    log("----------------");
+	    OAuthRequest request = new OAuthRequest(Verb.GET, TwitterUrl.TIMELINE+"?count="+count);	    	   
+	    JSONArray array = new JSONArray(getResponse(request));	    
+	    log("=== HOME ===");	    
 	    for(int i = 0 ; i<array.length(); i++){	   
 	    	JSONObject json = (JSONObject) array.get(i);
 	    	String user = ((JSONObject) json.get("user")).get("screen_name").toString();
@@ -109,6 +104,25 @@ public class AbstractTwixyConsole extends AbstractTwixy implements Twixy{
 			}*/
 		}
 		return list;
+	}
+	
+	public TwitterUser getUserInfo(String screenName){
+		OAuthRequest request = new OAuthRequest(Verb.GET, TwitterUrl.USER_INFO+"?screen_name="+screenName);	    	   
+		JSONObject user = new JSONObject(getResponse(request));	    	    
+	    TwitterUser twitterUser = new TwitterUser();
+	    twitterUser.setScreenName(user.get("screen_name").toString());
+	    twitterUser.setDescription(user.get("description").toString());
+	    twitterUser.setProfileImageUrl(user.get("profile_image_url_https").toString());	    
+//	    twitterUser.setFavortiesCount(user.get("favorite_count").toString());
+	    twitterUser.setFollowersCount(user.get("followers_count").toString());
+	    return twitterUser;
+	}
+	
+	private String getResponse(OAuthRequest request){
+		getService().signRequest(accessToken, request);
+	    Response response = request.send();
+	    String jsonResponse = response.getBody();
+	    return jsonResponse;
 	}
 	
 	public void printHelpInfo(){

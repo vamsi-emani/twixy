@@ -9,6 +9,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.ResourceBundle;
 import java.util.Scanner;
 
 import org.json.JSONArray;
@@ -26,10 +28,11 @@ import org.scribe.oauth.OAuthService;
  */
 public class TwixyConsole extends AbstractTwixyConsole{	 	
 	
-	private void login(){
+	private void login(){	
+		Properties props = new Conf().load();		
 		setService(new ServiceBuilder().provider(TwitterApi.class)				
-				.apiKey("6icbcAXyZx67r8uTAUM5Qw")
-				.apiSecret("SCCAdUUc6LXxiazxH3N0QfpNUvlUy84mZ2XZKiv39s")
+				.apiKey(props.get("apiKey").toString())
+				.apiSecret(props.get("apiSecret").toString())
 				.build()
 		);
 	    log("=== Twitter's OAuth Workflow ===");	
@@ -60,20 +63,28 @@ public class TwixyConsole extends AbstractTwixyConsole{
 	}		
 		
 	public void initConsoleCommands(){
-		addCommand("-n", new ICommand() {			
+		addCommand("-u", new ICommand() {
+			public Object exec(AbstractTwixyConsole console) {
+				return console.getUserInfo(getUserInput());
+			}
+		})
+		.addCommand("-n", new ICommand() {			
 			public Object exec(AbstractTwixyConsole console) {						
 				return console.getTimeline(Integer.parseInt(console.getUserInput()));
 			}
-		}).addCommand("-t", new ICommand() {			
+		})
+		.addCommand("-t", new ICommand() {			
 			public Object exec(AbstractTwixyConsole console) {				
 				console.tweet(console.getUserInput());
 				return "Twitter status updated ...";
 			}
-		}).addCommand("-f", new ICommand() {		
+		})
+		.addCommand("-f", new ICommand() {		
 			public Object exec(AbstractTwixyConsole console) {
 				return console.listFriends(console.getUserInput());				
 			}
-		}).addCommand("help", new ICommand() {			
+		})
+		.addCommand("help", new ICommand() {			
 			public Object exec(AbstractTwixyConsole console) {
 				console.printHelpInfo();
 				return "";
@@ -83,11 +94,13 @@ public class TwixyConsole extends AbstractTwixyConsole{
 	
 	private void talk(){		
 		while(!getUserInput().endsWith("!")){
-			setUserInput(getLineInput());			
-			if(getUserInput().equalsIgnoreCase("help"))
+			String line = getLineInput();
+			if(line.length() > 2)
+				setUserInput(line.substring(2));			
+			if(line.equalsIgnoreCase("help"))
 				printHelpInfo();			
-			else if(getUserInput().length() != 0){
-				String actionType = getUserInput();
+			else{
+				String actionType = line.substring(0, 2);
 				log(executeCmd(actionType));				
 			}
 			
