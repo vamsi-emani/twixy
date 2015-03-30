@@ -1,10 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>tweedy</groupId>
-  <artifactId>tweedy</artifactId>
+  <groupId>twixy</groupId>
+  <artifactId>twixy</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>tweedy</name>
-  <description>twitter app</description>
+  <name>twixy</name>
+  <description>A console based twitter app</description>
   
   <repositories>
   <repository>
